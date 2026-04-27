@@ -76,6 +76,14 @@
       letter-spacing: 1px;
     }
     .chalk-item.special:hover { color: rgba(248, 244, 233, 0.7); }
+    .chalk-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .chalk-price {
+      opacity: 0.85;
+    }
 
     /* ── Post-puzzle-A clue bar ── */
     #clue-a-bar {
@@ -122,6 +130,63 @@
       white-space: nowrap;
     }
 
+    /* ── Sticky note ── */
+    @keyframes stickyPulse {
+      0%, 100% { transform: rotate(-3deg) scale(1); }
+      50%       { transform: rotate(-3deg) scale(1.04); }
+    }
+    #sticky-wrapper {
+      position: absolute;
+      left: 28%;
+      top: 82%;
+      cursor: pointer;
+      z-index: 50;
+      perspective: 600px;
+    }
+    #sticky-note {
+      background: #F5E642;
+      width: 200px;
+      padding: 8px 10px;
+      box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
+      font-family: 'Permanent Marker', cursive;
+      font-size: 0.65rem;
+      color: #333;
+      line-height: 1.4;
+      transform: rotate(-3deg);
+      transform-style: preserve-3d;
+      animation: stickyPulse 2s ease-in-out infinite;
+      transition: transform 0.4s ease, opacity 0.4s ease;
+    }
+    #sticky-note.flip {
+      animation: none;
+      transform: rotate(-3deg) rotateY(180deg);
+    }
+    #sticky-note.slide-off {
+      transform: translateX(300px) rotate(-3deg) rotateY(180deg);
+      opacity: 0;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+
+    /* ── Menu board: disabled until sticky note found ── */
+    #menu-hotspot {
+      pointer-events: none;
+      cursor: default;
+    }
+    #menu-hotspot.active {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    /* ── Menu board glow (after sticky note found) ── */
+    @keyframes menuGlow {
+      0%, 100% { box-shadow: 0 0 6px  rgba(242, 169, 0, 0.15); }
+      50%       { box-shadow: 0 0 18px rgba(242, 169, 0, 0.35); }
+    }
+    #menu-hotspot.active {
+      animation: menuGlow 2.5s ease-in-out infinite;
+      border-radius: 4px;
+    }
+
     /* ── Floating message ── */
     .float-msg {
       position: fixed;
@@ -143,41 +208,46 @@
   <div class="timer" id="timer"></div>
 
   <!-- Instruction hint (disappears after Puzzle A) -->
-  <p id="hint-text">Investigate the dining hall &mdash; something is off with the menu.</p>
+  <p id="hint-text">Investigate the dining hall &mdash; something feels off.</p>
 
   <!-- ── Puzzle A: chalkboard modal ── -->
   <div id="menu-modal">
     <div id="chalkboard">
-      <p class="chalk-instruction">Something doesn't belong here. Click it.</p>
-      <h3>Today's Menu</h3>
-      <div class="chalk-item" onclick="wrongMenuItem(event)">Coffee</div>
-      <div class="chalk-item" onclick="wrongMenuItem(event)">Nitro</div>
-      <div class="chalk-item" onclick="wrongMenuItem(event)">Latte</div>
-      <div class="chalk-item special" onclick="correct1919(event)">1919</div>
-      <div class="chalk-item" onclick="wrongMenuItem(event)">Tea</div>
-      <div class="chalk-item" onclick="wrongMenuItem(event)">Pastries</div>
+      <p class="chalk-instruction">Something on this menu doesn't belong. Click it.</p>
+      <h3>Morning Drive Menu</h3>
+      <div class="chalk-item" onclick="wrongMenuItem(event)">Coffee <span class="chalk-price">$3.50</span></div>
+      <div class="chalk-item" onclick="wrongMenuItem(event)">Nitro Cold Brew <span class="chalk-price">$4.75</span></div>
+      <div class="chalk-item" onclick="wrongMenuItem(event)">Latte <span class="chalk-price">$5.00</span></div>
+      <div class="chalk-item" onclick="wrongMenuItem(event)">Tea <span class="chalk-price">$3.00</span></div>
+      <div class="chalk-item" onclick="wrongMenuItem(event)">Pastries <span class="chalk-price">$4.50</span></div>
+      <div class="chalk-item special" onclick="correctBizBeaver(event)">Biz E. Beaver <span class="chalk-price">$19.19</span></div>
     </div>
   </div>
 
   <!-- Puzzle A result clue bar -->
   <div id="clue-a-bar">
     <div class="clue-box">
-      "The year it all began. Remember this number. &mdash; The Thief"
+      "Biz E. Beaver &mdash; Babson's mascot. And that price... $19.19. Interesting. Remember those numbers. &mdash; The Thief"
     </div>
   </div>
 
   <div class="room-container" style="background-image: url('assets/images/trim.png');">
 
-    <!-- ── Correct hotspot: menu board right side ── -->
+    <!-- ── Correct hotspot: menu board right side (disabled until sticky note found) ── -->
     <div
-      class="hotspot"
-      style="right: 8%; top: 35%; width: 100px; height: 160px;"
+      id="menu-hotspot"
+      style="position: absolute; right: 4%; top: 35%; width: 100px; height: 160px; z-index: 5;"
       onclick="openMenuModal()"
     ></div>
 
     <!-- ── Decoy: Grate-Ful banner center ── -->
     <div class="hotspot" style="left: 38%; top: 42%; width: 120px; height: 280px;"
       onclick="showFloatMsg(event, 'Almost... but not quite. The menu is further to your right.')"></div>
+
+    <!-- ── Sticky note over food counter ── -->
+    <div id="sticky-wrapper" onclick="foundStickyNote(event)">
+      <div id="sticky-note">psst— check the Morning Drive menu → (far right)</div>
+    </div>
 
     <!-- ── Decoy: food station left ── -->
     <div class="hotspot" style="left: 8%; top: 45%; width: 120px; height: 140px;"
@@ -203,7 +273,7 @@
     <div class="ui-panel" id="puzzle-b">
       <h2>A Locked Display Case</h2>
       <p>A glass case on the wall holds something important. It has a 4-digit combination lock.</p>
-      <div class="clue-box">The thief's note said: "The year it all began…"</div>
+      <div class="clue-box">The thief's note mentioned $19.19... strip away the symbols. What year does that give you?</div>
       <input
         id="combo-input"
         class="input-field"
@@ -219,13 +289,21 @@
       <!-- Revealed after correct code -->
       <div id="unlock-clue">
         <div class="clue-box" style="margin-top: 16px;">
-          "One room left. The answer to everything Babson stands for is written on the board. &mdash; The Thief"
+          "Two leads. One goes through the Commons — but someone's waiting there. The other goes straight to the Lecture Hall. Choose fast. &mdash; The Thief"
         </div>
+        <h2 style="margin-top: 20px; margin-bottom: 16px;">Two leads. Where do you go?</h2>
         <button
           class="btn"
+          onclick="setProgress('room2Complete', 'true'); window.location.href='commons.html';"
+        >
+          Check the Commons &rarr;
+        </button>
+        <p style="font-style: italic; color: var(--gold); font-size: 0.82rem; margin: 10px 0; font-family: 'DM Sans', sans-serif;">Your choice. But choose fast.</p>
+        <button
+          style="background: var(--cream); color: #1B4332; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; padding: 12px 28px; border: none; cursor: pointer;"
           onclick="setProgress('room2Complete', 'true'); window.location.href='room3.html';"
         >
-          Head to the Lecture Hall
+          Go Straight to the Lecture Hall
         </button>
       </div>
     </div>
@@ -235,7 +313,34 @@
   <script src="js/game.js"></script>
   <script>
     checkAccess('room1Complete', 'room1.html');
-    startTimer(10, 'timer');
+    startTimer('timer');
+
+    // ── Sticky note ───────────────────────────────────────────────────────────
+
+    function foundStickyNote(e) {
+      const note       = document.getElementById('sticky-note');
+      const menuHotspot = document.getElementById('menu-hotspot');
+
+      // Flip
+      note.classList.add('flip');
+
+      // After flip completes, slide off and activate menu
+      setTimeout(() => {
+        note.classList.add('slide-off');
+        setTimeout(() => {
+          document.getElementById('sticky-wrapper').style.display = 'none';
+        }, 520);
+      }, 400);
+
+      // Floating hint at click position
+      showFloatMsg(e, "The menu... something's not right about it.");
+
+      // Activate menu hotspot with glow
+      menuHotspot.classList.add('active');
+
+      // Update hint text
+      document.getElementById('hint-text').textContent = 'Find the menu on the right →';
+    }
 
     // ── Puzzle A ──────────────────────────────────────────────────────────────
 
@@ -249,10 +354,10 @@
 
     function wrongMenuItem(e) {
       e.stopPropagation();
-      showFloatMsg(e, "That's a normal menu item.");
+      showFloatMsg(e, "That's a regular menu item. Look more carefully.");
     }
 
-    function correct1919(e) {
+    function correctBizBeaver(e) {
       e.stopPropagation();
       closeMenuModal();
 

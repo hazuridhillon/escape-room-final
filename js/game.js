@@ -15,36 +15,44 @@ function checkAccess(requiredKey, redirectUrl) {
 }
 
 function clearProgress() {
-  ['room1Complete', 'room2aComplete', 'room2bComplete', 'room3Complete'].forEach(
+  ['room1Complete', 'room2aComplete', 'room2bComplete', 'room3Complete', 'room2Complete', 'timerStart'].forEach(
     key => localStorage.removeItem(key)
   );
 }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
 
-function startTimer(minutes, timerId) {
+function startTimer(timerId) {
   const el = document.getElementById(timerId);
   if (!el) return;
 
-  let totalSeconds = minutes * 60;
+  const TOTAL = 10 * 60; // 10 minutes in seconds
+
+  // Resume or start the shared timer
+  if (!localStorage.getItem('timerStart')) {
+    localStorage.setItem('timerStart', Date.now());
+  }
+
+  function getRemaining() {
+    const elapsed = Math.floor((Date.now() - parseInt(localStorage.getItem('timerStart'), 10)) / 1000);
+    return Math.max(0, TOTAL - elapsed);
+  }
 
   function tick() {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
+    const remaining = getRemaining();
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
     el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-    if (totalSeconds <= 120) {
+    if (remaining <= 120) {
       el.classList.add('timer-urgent');
       el.style.animation = 'pulse 0.8s ease-in-out infinite';
     }
 
-    if (totalSeconds <= 0) {
+    if (remaining <= 0) {
       clearInterval(intervalId);
       window.location.href = 'index.html?timeout=true';
-      return;
     }
-
-    totalSeconds--;
   }
 
   tick();

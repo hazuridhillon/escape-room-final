@@ -3,26 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Restore the Statue</title>
+  <title>Find the Globe</title>
   <link rel="stylesheet" href="css/style.css" />
   <style>
     .room-container::after { pointer-events: none; }
 
-    /* ── Floating statue ── */
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50%       { transform: translateY(-12px); }
+    /* ── Toast notification ── */
+    @keyframes toastDown {
+      from { transform: translateX(-50%) translateY(-80px); opacity: 0; }
+      to   { transform: translateX(-50%) translateY(0);     opacity: 1; }
+    }
+    @keyframes toastUp {
+      from { transform: translateX(-50%) translateY(0);     opacity: 1; }
+      to   { transform: translateX(-50%) translateY(-80px); opacity: 0; }
+    }
+    #toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: #0D1F17;
+      border: 1.5px solid var(--gold);
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      padding: 12px 20px;
+      z-index: 500;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    #toast.show {
+      animation: toastDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    #toast.hide {
+      animation: toastUp 0.35s ease-in forwards;
     }
 
+    /* ── Roger statue ── */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
     #roger {
       position: fixed;
-      bottom: 80px;
-      left: 60px;
-      width: 160px;
+      width: 120px;
       cursor: grab;
       z-index: 20;
-      filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
-      animation: float 3s ease-in-out infinite;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+      animation: float 2.5s ease-in-out infinite;
       user-select: none;
       -webkit-user-drag: element;
     }
@@ -31,22 +61,25 @@
       animation-play-state: paused;
     }
 
-    /* ── Drop zone ── */
+    /* ── Globe drop zone ── */
     #drop-zone {
       position: absolute;
-      left: 48%;
-      top: 72%;
-      width: 120px;
-      height: 80px;
+      left: 70%;
+      top: 38%;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
       z-index: 5;
-      border-radius: 4px;
-      transition: box-shadow 0.2s ease;
+      border: 2px dashed transparent;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
     }
     #drop-zone.drag-over {
-      box-shadow: 0 0 20px rgba(242, 169, 0, 0.6);
+      border-color: var(--gold);
+      box-shadow: 0 0 16px rgba(242,169,0,0.5);
+      background: rgba(242,169,0,0.1);
     }
 
-    /* ── Confetti burst ── */
+    /* ── Gold particle burst ── */
     @keyframes burst {
       0%   { transform: translate(0, 0) scale(1); opacity: 1; }
       100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
@@ -82,7 +115,7 @@
       font-style: italic;
       color: var(--cream);
       font-size: 0.85rem;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
       z-index: 10;
       pointer-events: none;
       white-space: nowrap;
@@ -92,13 +125,19 @@
 </head>
 <body>
 
+  <!-- Timer -->
+  <div class="timer" id="timer"></div>
+
+  <!-- Toast -->
+  <div id="toast">The thief's trail leads to the globe. Find it on the map.</div>
+
   <!-- Instruction hint -->
-  <p id="hint-text">Drag Roger back to where he belongs.</p>
+  <p id="hint-text">Drag Roger to the globe &mdash; he belongs there.</p>
 
   <!-- White flash -->
   <div id="flash"></div>
 
-  <!-- Draggable Roger statue (lives outside .room-container so it's position:fixed) -->
+  <!-- Draggable Roger (fixed, outside .room-container) -->
   <img
     id="roger"
     src="assets/images/roger.png"
@@ -106,24 +145,47 @@
     draggable="true"
   />
 
-  <div class="room-container" style="background-image: url('assets/images/globenostatue.png');">
-
-    <!-- Invisible drop zone over the empty pedestal -->
+  <div class="room-container" style="background-image: url('assets/images/map.png');">
+    <!-- Globe drop zone -->
     <div id="drop-zone"></div>
-
   </div>
 
   <script src="js/game.js"></script>
   <script>
     checkAccess('room3Complete', 'room3.html');
+    startTimer('timer');
 
     const roger    = document.getElementById('roger');
     const dropZone = document.getElementById('drop-zone');
     const flash    = document.getElementById('flash');
     const hint     = document.getElementById('hint-text');
+    const toast    = document.getElementById('toast');
 
-    // ── Drag events on the statue ─────────────────────────────────────────────
+    // ── Randomize Roger starting position ────────────────────────────────────
+    // Left third: left 5%–25%,  right third: left 72%–88%
+    // Vertical middle third: top 35%–65%
+    (function placeRoger() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
 
+      const leftPx  = vw * (0.05 + Math.random() * 0.20); // left third only
+
+      const topPx = vh * (0.35 + Math.random() * 0.30);
+
+      roger.style.left = leftPx.toFixed(0) + 'px';
+      roger.style.top  = topPx.toFixed(0)  + 'px';
+    })();
+
+    // ── Toast: show after 0.5 s, auto-dismiss after 3 s ──────────────────────
+    setTimeout(() => {
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+      }, 3000);
+    }, 500);
+
+    // ── Drag events ───────────────────────────────────────────────────────────
     roger.addEventListener('dragstart', e => {
       roger.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
@@ -135,7 +197,6 @@
     });
 
     // ── Drop zone events ──────────────────────────────────────────────────────
-
     dropZone.addEventListener('dragover', e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
@@ -151,72 +212,63 @@
       if (e.dataTransfer.getData('text/plain') !== 'roger') return;
       dropZone.classList.remove('drag-over');
       dropZone.style.pointerEvents = 'none';
-      snapRogerToPedestal();
+      snapRoger();
     });
 
-    // ── Snap Roger to pedestal ────────────────────────────────────────────────
+    // ── Snap Roger to globe ───────────────────────────────────────────────────
+    function snapRoger() {
+      const dropRect  = dropZone.getBoundingClientRect();
+      const centerX   = dropRect.left + dropRect.width  / 2;
+      const centerY   = dropRect.top  + dropRect.height / 2;
 
-    function snapRogerToPedestal() {
-      const dropRect = dropZone.getBoundingClientRect();
-
-      // 1. Remove the float animation so transform resets to none
+      // Stop float — reflow so transform resets
       roger.style.animation = 'none';
-      void roger.offsetHeight; // force reflow — transform is now 0
+      void roger.offsetHeight;
 
-      // 2. Switch to top-based positioning at the current visual location
-      const rogerRect = roger.getBoundingClientRect();
-      roger.style.top    = rogerRect.top  + 'px';
-      roger.style.left   = rogerRect.left + 'px';
-      roger.style.bottom = 'auto';
-      void roger.offsetHeight; // settle the new position
+      // Re-anchor at current visual position using top/left
+      const rogerRect  = roger.getBoundingClientRect();
+      roger.style.top  = rogerRect.top  + 'px';
+      roger.style.left = rogerRect.left + 'px';
+      void roger.offsetHeight;
 
-      // 3. Add transition and snap to pedestal
-      roger.style.transition = 'top 0.55s cubic-bezier(0.22, 1, 0.36, 1), left 0.55s cubic-bezier(0.22, 1, 0.36, 1)';
+      // Smooth snap to drop zone center
+      roger.style.transition = 'top 0.4s ease, left 0.4s ease';
+      roger.style.left = (centerX - rogerRect.width  / 2) + 'px';
+      roger.style.top  = (centerY - rogerRect.height / 2) + 'px';
 
-      const targetLeft = dropRect.left + dropRect.width  / 2 - rogerRect.width  / 2;
-      const targetTop  = dropRect.top  - rogerRect.height * 0.6; // sit above pedestal
-
-      roger.style.left = targetLeft + 'px';
-      roger.style.top  = targetTop  + 'px';
-
-      // Hide hint
       hint.style.opacity = '0';
 
-      // Burst confetti from pedestal center
-      spawnBurst(
-        dropRect.left + dropRect.width  / 2,
-        dropRect.top  + dropRect.height / 2
-      );
+      // Gold particle burst from globe center
+      spawnBurst(centerX, centerY);
 
-      // Fade statue out after it lands
+      // Gold glow on Roger
       setTimeout(() => {
-        roger.style.transition = 'opacity 0.6s ease';
-        roger.style.opacity    = '0';
-      }, 800);
+        roger.style.transition += ', filter 0.4s ease';
+        roger.style.filter = 'drop-shadow(0 0 20px rgba(242,169,0,0.8))';
+      }, 500);
 
-      // White flash — no display toggle needed, transition always fires
+      // White flash
       setTimeout(() => {
         flash.classList.add('active');
       }, 1500);
 
-      // Redirect after flash is fully opaque
+      // Redirect
       setTimeout(() => {
         setProgress('restoreComplete', 'true');
         window.location.href = 'win.html';
       }, 2000);
     }
 
-    // ── Gold confetti burst ───────────────────────────────────────────────────
-
+    // ── Gold particle burst ───────────────────────────────────────────────────
     function spawnBurst(cx, cy) {
-      const colors = ['#F2A900', '#ffd000', '#ffc82c', '#ffeb80', '#fff3c0', '#ffffff'];
-      for (let i = 0; i < 30; i++) {
+      const colors = ['#F2A900','#ffd000','#ffc82c','#ffeb80','#fff3c0','#ffffff'];
+      for (let i = 0; i < 20; i++) {
         const el    = document.createElement('div');
-        const size  = (6 + Math.random() * 8).toFixed(1);
-        const angle = (Math.PI * 2 / 30) * i + Math.random() * 0.4; // even spread + jitter
-        const dist  = 55 + Math.random() * 90;
-        const dur   = (0.5 + Math.random() * 0.6).toFixed(2);
-        const del   = (Math.random() * 0.25).toFixed(2);
+        const size  = (5 + Math.random() * 7).toFixed(1);
+        const angle = (Math.PI * 2 / 20) * i + Math.random() * 0.4;
+        const dist  = 40 + Math.random() * 70;
+        const dur   = (0.5 + Math.random() * 0.5).toFixed(2);
+        const del   = (Math.random() * 0.2).toFixed(2);
 
         el.className = 'burst-particle';
         el.style.cssText = [

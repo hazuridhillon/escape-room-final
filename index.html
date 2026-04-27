@@ -72,7 +72,7 @@
       <p class="title-tagline">Someone stole the statue. Follow the trail.</p>
       <button
         class="btn"
-        onclick="clearProgress(); window.location.href='room1.html';"
+        onclick="clearProgress(); localStorage.setItem('timerStart', Date.now()); window.location.href='room1.html';"
       >
         Begin
       </button>

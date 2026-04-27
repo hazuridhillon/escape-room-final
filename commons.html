@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Commons — Higher or Lower</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .room-container::after { pointer-events: none; }
+
+    /* ── Intro panel override ── */
+    #intro-panel {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      background: rgba(13, 31, 23, 0.82);
+    }
+    #intro-panel .ui-panel {
+      position: static;
+      transform: none;
+      max-width: 480px;
+      width: 90%;
+      animation: fadeIn 0.5s ease;
+    }
+
+    /* ── Poker table overlay ── */
+    #poker-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 18, 11, 0.92);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    #poker-overlay.open {
+      display: flex;
+      animation: fadeIn 0.5s ease;
+    }
+
+    /* ── Round tracker ── */
+    #round-tracker {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .round-chip {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      background: transparent;
+      transition: background 0.3s ease;
+    }
+    .round-chip.won {
+      background: var(--gold);
+    }
+
+    /* ── Table label ── */
+    .table-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(248, 244, 233, 0.45);
+    }
+
+    /* ── Card wrapper row ── */
+    #card-row {
+      display: flex;
+      gap: 60px;
+      align-items: flex-end;
+    }
+    .card-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-slot-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(248, 244, 233, 0.5);
+    }
+
+    /* ── 3-D card flip ── */
+    .card-scene {
+      width: 90px;
+      height: 130px;
+      perspective: 600px;
+    }
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+    }
+    /* Back face: visible at 0deg */
+    .card-back {
+      background: #1B4332;
+      border: 2px solid rgba(242, 169, 0, 0.4);
+      transform: rotateY(0deg);
+      font-size: 2rem;
+      color: var(--gold);
+    }
+    /* Front face: pre-rotated 180deg so it shows when card is flipped */
+    .card-front {
+      background: #fafafa;
+      border: 2px solid #ccc;
+      transform: rotateY(180deg);
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card-rank {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .card-suit {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .red { color: #c0392b; }
+    .black { color: #1a1a1a; }
+
+    /* ── Guess buttons ── */
+    #guess-row {
+      display: flex;
+      gap: 16px;
+    }
+    .guess-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 12px 28px;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .guess-btn:hover { opacity: 0.85; }
+    .guess-btn:disabled { opacity: 0.35; cursor: default; }
+    #btn-higher {
+      background: var(--gold);
+      color: var(--dark);
+    }
+    #btn-lower {
+      background: var(--cream);
+      color: var(--dark);
+    }
+
+    /* ── Round result message ── */
+    #round-msg {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      min-height: 22px;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    /* ── Thief's torn note (win state) ── */
+    @keyframes slideInRight {
+      from { transform: translateX(300px) rotate(-2deg); opacity: 0; }
+      to   { transform: translateX(0)      rotate(-2deg); opacity: 1; }
+    }
+    #thief-note {
+      position: fixed;
+      bottom: 80px;
+      right: 24px;
+      background: var(--cream);
+      color: var(--dark);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      padding: 16px;
+      max-width: 220px;
+      box-shadow: 2px 4px 16px rgba(0,0,0,0.45);
+      transform: rotate(-2deg) translateX(300px);
+      opacity: 0;
+      z-index: 200;
+      border-top: 4px solid var(--red);
+      pointer-events: none;
+    }
+    #thief-note.slide-in {
+      animation: slideInRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    #thief-note .note-sig {
+      display: block;
+      margin-top: 10px;
+      font-style: italic;
+      font-size: 0.75rem;
+      color: var(--red);
+    }
+
+    /* ── Poker table slide up on win ── */
+    @keyframes tableSlideUp {
+      from { transform: translateY(0); opacity: 1; }
+      to   { transform: translateY(-110%); opacity: 0; }
+    }
+    #poker-overlay.slide-up {
+      animation: tableSlideUp 0.7s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+    }
+
+    /* ── Win panel ── */
+    #win-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 18, 11, 0.92);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    #win-panel.open {
+      display: flex;
+      animation: fadeIn 0.6s ease;
+    }
+    #win-panel .ui-panel {
+      position: static;
+      transform: none;
+      max-width: 460px;
+      width: 90%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Timer -->
+  <div class="timer" id="timer"></div>
+
+  <!-- Thief's note (slides in after winning) -->
+  <div id="thief-note">
+    "You beat my dealer. Impressive. But you're still one room away from finding the statue."
+    <span class="note-sig">&mdash; The Thief</span>
+  </div>
+
+  <!-- Intro panel -->
+  <div id="intro-panel">
+    <div class="ui-panel">
+      <h2>The Commons</h2>
+      <div class="clue-box">
+        A suspicious figure sits at the card table in the corner, shuffling slowly. They look up. "You want to find the statue? Beat me at Higher or Lower. Three rounds. Best of three."
+      </div>
+      <button class="btn" onclick="startGame()">Deal Me In</button>
+    </div>
+  </div>
+
+  <!-- Poker overlay -->
+  <div id="poker-overlay">
+
+    <!-- Round tracker -->
+    <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <div class="table-label">Rounds Won</div>
+      <div id="round-tracker">
+        <div class="round-chip" id="chip-1"></div>
+        <div class="round-chip" id="chip-2"></div>
+        <div class="round-chip" id="chip-3"></div>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="table-label" style="letter-spacing:2px;">Is your card higher or lower than the dealer's?</div>
+    <div id="card-row">
+
+      <div class="card-slot">
+        <div class="card-slot-label">Dealer</div>
+        <div class="card-scene">
+          <div class="card flipped" id="dealer-card">
+            <div class="card-face card-back">&#9824;</div>
+            <div class="card-face card-front" id="dealer-front">
+              <span class="card-rank" id="dealer-rank"></span>
+              <span class="card-suit" id="dealer-suit"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-slot">
+        <div class="card-slot-label">Your Card</div>
+        <div class="card-scene">
+          <div class="card" id="player-card">
+            <div class="card-face card-back">&#9824;</div>
+            <div class="card-face card-front" id="player-front">
+              <span class="card-rank" id="player-rank"></span>
+              <span class="card-suit" id="player-suit"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Guess buttons -->
+    <div id="guess-row">
+      <button class="guess-btn" id="btn-higher" onclick="makeGuess('higher')">&#9650; Higher</button>
+      <button class="guess-btn" id="btn-lower"  onclick="makeGuess('lower')">&#9660; Lower</button>
+    </div>
+
+    <!-- Round result -->
+    <div id="round-msg"></div>
+
+  </div>
+
+  <!-- Win panel -->
+  <div id="win-panel">
+    <div class="ui-panel">
+      <h2>You Read the Table</h2>
+      <div class="clue-box">
+        The figure slides a torn note across the table. "The lecture hall. That's where I left the last clue. Go."
+      </div>
+      <button
+        class="btn"
+        onclick="setProgress('commonsComplete', 'true'); setProgress('room2Complete', 'true'); window.location.href='room3.html';"
+      >
+        Head to the Lecture Hall
+      </button>
+    </div>
+  </div>
+
+  <div class="room-container" style="background-image: url('assets/images/poker.png');"></div>
+
+  <script src="js/game.js"></script>
+  <script>
+    checkAccess('room2Complete', 'room2.html');
+    startTimer('timer');
+
+    // ── Card data ─────────────────────────────────────────────────────────────
+    const RANKS       = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+    const RANK_VALUES = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
+    const SUITS       = [
+      { symbol: '♠', cls: 'black' },
+      { symbol: '♣', cls: 'black' },
+      { symbol: '♥', cls: 'red'   },
+      { symbol: '♦', cls: 'red'   },
+    ];
+
+    function randomCard() {
+      return {
+        rank:  RANKS[Math.floor(Math.random() * RANKS.length)],
+        suit:  SUITS[Math.floor(Math.random() * SUITS.length)],
+      };
+    }
+
+    function applyCard(rankEl, suitEl, card) {
+      rankEl.textContent = card.rank;
+      suitEl.textContent = card.suit.symbol;
+      rankEl.className = 'card-rank ' + card.suit.cls;
+      suitEl.className = 'card-suit ' + card.suit.cls;
+    }
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let roundsWon   = 0;
+    let dealerCard  = null;
+    let playerCard  = null;
+
+    // ── Start ─────────────────────────────────────────────────────────────────
+    function startGame() {
+      document.getElementById('intro-panel').style.display = 'none';
+      document.getElementById('poker-overlay').classList.add('open');
+      dealRound();
+    }
+
+    // ── Deal a round ──────────────────────────────────────────────────────────
+    function dealRound() {
+      const dealerCardEl  = document.getElementById('dealer-card');
+      const playerCardEl  = document.getElementById('player-card');
+      const msg           = document.getElementById('round-msg');
+
+      msg.textContent = '';
+      msg.className   = '';
+
+      // Snap cards back to face-down without animation
+      [dealerCardEl, playerCardEl].forEach(c => {
+        c.style.transition = 'none';
+        c.classList.remove('flipped');
+        void c.offsetWidth;
+        c.style.transition = '';
+      });
+
+      dealerCard = randomCard();
+      playerCard = randomCard();
+
+      // Re-deal if tie (same rank)
+      if (dealerCard.rank === playerCard.rank) {
+        dealRound();
+        return;
+      }
+
+      applyCard(
+        document.getElementById('dealer-rank'),
+        document.getElementById('dealer-suit'),
+        dealerCard
+      );
+      applyCard(
+        document.getElementById('player-rank'),
+        document.getElementById('player-suit'),
+        playerCard
+      );
+
+      // Flip dealer card face up with slight delay
+      setTimeout(() => dealerCardEl.classList.add('flipped'), 150);
+
+      // Enable buttons
+      document.getElementById('btn-higher').disabled = false;
+      document.getElementById('btn-lower').disabled  = false;
+    }
+
+    // ── Evaluate guess ────────────────────────────────────────────────────────
+    function makeGuess(guess) {
+      document.getElementById('btn-higher').disabled = true;
+      document.getElementById('btn-lower').disabled  = true;
+
+      const playerCardEl = document.getElementById('player-card');
+      const msg          = document.getElementById('round-msg');
+
+      // Flip player card face up
+      playerCardEl.classList.add('flipped');
+
+      const dVal = RANK_VALUES[dealerCard.rank];
+      const pVal = RANK_VALUES[playerCard.rank];
+      const actuallyHigher = pVal > dVal;
+
+      const correct = (guess === 'higher' && actuallyHigher) || (guess === 'lower' && !actuallyHigher);
+
+      setTimeout(() => {
+        if (correct) {
+          roundsWon++;
+          document.getElementById('chip-' + roundsWon).classList.add('won');
+          msg.textContent = 'Correct.';
+          msg.style.color = '#52b788';
+
+          if (roundsWon >= 3) {
+            setTimeout(triggerWin, 1000);
+          } else {
+            setTimeout(dealRound, 1600);
+          }
+        } else {
+          msg.textContent = "Wrong. Starting over.";
+          msg.style.color = '#e63946';
+          shakeElement(playerCardEl);
+
+          setTimeout(() => {
+            // Reset chips
+            roundsWon = 0;
+            ['chip-1','chip-2','chip-3'].forEach(id =>
+              document.getElementById(id).classList.remove('won')
+            );
+            dealRound();
+          }, 1800);
+        }
+      }, 600);
+    }
+
+    // ── Win sequence ──────────────────────────────────────────────────────────
+    function triggerWin() {
+      const overlay = document.getElementById('poker-overlay');
+      overlay.classList.add('slide-up');
+
+      // Slide in thief note
+      setTimeout(() => {
+        document.getElementById('thief-note').classList.add('slide-in');
+      }, 400);
+
+      // Show win panel after note is visible
+      setTimeout(() => {
+        document.getElementById('win-panel').classList.add('open');
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

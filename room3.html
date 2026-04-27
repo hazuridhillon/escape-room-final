@@ -211,7 +211,7 @@
     <!-- ── In-place whiteboard panel ── -->
     <div id="whiteboard-panel">
       <p class="board-riddle">
-        Roger Babson built this college on one idea. It is the first word of Babson's mission. It is what every student here is training to become. What is it?
+        Babson is proud to be second. Second best business school in the country. And home to the second largest rotating <span style="display:inline-block; min-width:90px; border-bottom:3px solid #1a1a1a; vertical-align:bottom; margin: 0 4px;">&nbsp;</span> in the world &mdash; follow it to find Roger.
       </p>
       <input
         id="riddle-input"
@@ -248,7 +248,7 @@
   <script src="js/game.js"></script>
   <script>
     checkAccess('room2Complete', 'room2.html');
-    startTimer(10, 'timer');
+    startTimer('timer');
 
     // ── Torn note slides in after 1 s ─────────────────────────────────────────
     setTimeout(() => {
@@ -264,7 +264,7 @@
     }
 
     // ── Answer check ──────────────────────────────────────────────────────────
-    const CORRECT = ['entrepreneur', 'entrepreneurship'];
+    const CORRECT = ['globe'];
 
     function checkAnswer() {
       const input    = document.getElementById('riddle-input');
@@ -272,7 +272,7 @@
       const val      = input.value.trim().toLowerCase();
 
       if (CORRECT.includes(val)) {
-        showSuccess(feedback, "That's it. The thief's trail ends here.");
+        showSuccess(feedback, "The globe. Of course. You take off running across campus.");
         input.disabled = true;
         document.querySelector('#whiteboard-panel .btn').disabled = true;
 
@@ -287,7 +287,7 @@
 
       } else {
         shakeElement(input);
-        showError(feedback, "Not quite. Think about what Babson stands for.");
+        showError(feedback, "Not quite. Think about what's at the center of Babson's campus...");
         input.value = '';
         input.focus();
       }
