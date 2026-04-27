@@ -1,0 +1,208 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@400;500;700&family=Permanent+Marker&display=swap');
+
+:root {
+  --green: #1B4332;
+  --cream: #F8F4E9;
+  --red: #C8102E;
+  --gold: #F2A900;
+  --dark: #0D1F17;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--dark);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--cream);
+}
+
+/* ── Room Container ── */
+
+.room-container {
+  width: 100vw;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  animation: fadeIn 0.6s ease;
+}
+
+.room-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 31, 23, 0.55);
+  pointer-events: none;
+}
+
+/* ── UI Panel ── */
+
+.ui-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(27, 67, 50, 0.92);
+  color: var(--cream);
+  border: 2px solid var(--gold);
+  padding: 40px;
+  max-width: 480px;
+  width: 90%;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+/* ── Button ── */
+
+.btn {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--dark);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 14px 32px;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  margin-top: 16px;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn:hover {
+  background: var(--cream);
+  color: var(--gold);
+}
+
+/* ── Clue Box ── */
+
+.clue-box {
+  background: var(--cream);
+  border-left: 4px solid var(--red);
+  color: var(--dark);
+  font-size: 13px;
+  padding: 12px;
+  margin-top: 12px;
+  border-radius: 2px;
+}
+
+/* ── Timer ── */
+
+.timer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  font-family: monospace;
+  color: var(--gold);
+  font-size: 1.4rem;
+  z-index: 999;
+  background: rgba(13, 31, 23, 0.8);
+  padding: 8px 16px;
+  border: 1px solid var(--gold);
+}
+
+/* ── Input Field ── */
+
+.input-field {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 2px solid var(--gold);
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  margin-top: 12px;
+  outline: none;
+}
+
+.input-field::placeholder {
+  color: rgba(248, 244, 233, 0.5);
+}
+
+/* ── Animations ── */
+
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-8px); }
+  40%  { transform: translateX(8px); }
+  60%  { transform: translateX(-8px); }
+  80%  { transform: translateX(8px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.shake {
+  animation: shake 0.4s steps(5, end);
+}
+
+/* ── Typography ── */
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-family: 'Playfair Display', serif;
+  color: var(--cream);
+  margin-bottom: 16px;
+}
+
+p {
+  line-height: 1.7;
+  color: var(--cream);
+  margin-bottom: 12px;
+}
+
+.error-text {
+  color: var(--red);
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.success-text {
+  color: var(--gold);
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+/* ── Text Message Bubble ── */
+
+.text-message {
+  background: #1c1c1e;
+  border-radius: 18px;
+  max-width: 320px;
+  margin: 16px auto;
+  padding: 16px;
+}
+
+.text-message img {
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.text-message .sender {
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}

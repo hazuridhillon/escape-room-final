@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Statue Returns — The Missing Statue</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Panel: top-anchored, hidden until JS reveals it ── */
+    .ui-panel {
+      z-index: 10;
+      top: 8%;
+      transform: translateX(-50%);
+      display: none;
+      opacity: 0;
+    }
+
+    @keyframes panelFadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .ui-panel.visible {
+      display: block;
+      animation: panelFadeIn 0.8s ease forwards;
+    }
+
+    /* ── Gold clue box variant ── */
+    .clue-box-gold {
+      background: rgba(242, 169, 0, 0.08);
+      border-left: 4px solid var(--gold);
+      color: var(--cream);
+      font-size: 13px;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 2px;
+      line-height: 1.7;
+    }
+
+    /* ── Confetti ── */
+    @keyframes fall {
+      0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(110vh)  rotate(540deg); opacity: 0.5; }
+    }
+    .confetti-piece {
+      position: fixed;
+      z-index: 0;
+      pointer-events: none;
+      border-radius: 2px;
+    }
+
+    /* ── Gold rule ── */
+    .gold-rule {
+      border: none;
+      border-top: 1px solid var(--gold);
+      margin: 12px 0 20px;
+    }
+
+    /* ── CASE CLOSED label ── */
+    .case-label {
+      color: var(--gold);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div
+    class="room-container"
+    style="background-image: url('assets/images/globewithstatue.png');"
+  >
+    <div class="ui-panel" id="win-panel">
+      <p class="case-label">Case Closed</p>
+      <h1>The Statue Returns</h1>
+      <hr class="gold-rule" />
+      <p>
+        You followed every clue, cracked every code, and outsmarted the thief.
+        The Roger Babson statue stands where it belongs.
+      </p>
+      <div class="clue-box-gold">
+        Roger Babson founded this college in 1919 on one belief: that
+        entrepreneurship could change the world. Today, you proved him right.
+      </div>
+      <button
+        class="btn"
+        onclick="clearProgress(); window.location.href='index.html';"
+      >
+        Play Again
+      </button>
+    </div>
+  </div>
+
+  <script src="js/game.js"></script>
+  <script>
+    // Reveal panel after 1.5 s, then spawn confetti
+    setTimeout(() => {
+      document.getElementById('win-panel').classList.add('visible');
+      spawnConfetti();
+    }, 1500);
+
+    function spawnConfetti() {
+      const colors = ['#F2A900', '#ffd000', '#C8102E', '#ff3355', '#1B4332', '#2d7a52', '#F8F4E9', '#ffffff'];
+      for (let i = 0; i < 60; i++) {
+        const el  = document.createElement('div');
+        const size = (10 + Math.random() * 10).toFixed(1);
+        const dur  = (2  + Math.random() * 3).toFixed(2);
+        const del  = (Math.random() * 2.5).toFixed(2);
+        el.className = 'confetti-piece';
+        el.style.cssText = [
+          `width:${size}px`,
+          `height:${size}px`,
+          `background:${colors[Math.floor(Math.random() * colors.length)]}`,
+          `left:${(Math.random() * 100).toFixed(1)}%`,
+          `top:-20px`,
+          `animation:fall ${dur}s ${del}s linear forwards`,
+        ].join(';');
+        document.body.appendChild(el);
+      }
+    }
+  </script>
+</body>
+</html>

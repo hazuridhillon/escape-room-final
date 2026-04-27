@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room 3 — The Lecture Hall</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .room-container::after { pointer-events: none; }
+
+    /* ── Hotspots ── */
+    .hotspot {
+      position: absolute;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    /* ── Whiteboard hotspot glow ── */
+    @keyframes boardGlow {
+      0%   { box-shadow: 0 0 4px  rgba(242, 169, 0, 0.08); }
+      50%  { box-shadow: 0 0 10px rgba(242, 169, 0, 0.18); }
+      100% { box-shadow: 0 0 4px  rgba(242, 169, 0, 0.08); }
+    }
+    .hotspot-board {
+      animation: boardGlow 3s ease-in-out infinite;
+      border-radius: 2px;
+    }
+
+    /* ── Torn paper note ── */
+    @keyframes slideInRight {
+      from { transform: translateX(300px) rotate(-2deg); opacity: 0; }
+      to   { transform: translateX(0)      rotate(-2deg); opacity: 1; }
+    }
+    #thief-note {
+      position: fixed;
+      bottom: 80px;
+      right: 24px;
+      background: var(--cream);
+      color: var(--dark);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      padding: 16px;
+      max-width: 220px;
+      box-shadow: 2px 4px 16px rgba(0,0,0,0.45);
+      transform: rotate(-2deg) translateX(300px);
+      opacity: 0;
+      z-index: 50;
+      border-top: 4px solid var(--red);
+      pointer-events: none;
+    }
+    #thief-note.slide-in {
+      animation: slideInRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    #thief-note .note-sig {
+      display: block;
+      margin-top: 10px;
+      font-style: italic;
+      font-size: 0.75rem;
+      color: var(--red);
+    }
+
+    /* ── In-place whiteboard panel ── */
+    #whiteboard-panel {
+      display: none;
+      position: absolute;
+      left: 64%;
+      top: 7%;
+      transform: translateX(-50%);
+      width: 500px;
+      z-index: 10;
+      background: #fafafa;
+      border: 2px solid #bbb;
+      border-radius: 3px;
+      padding: 28px 32px 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.35), inset 0 0 60px rgba(0,0,0,0.03);
+      animation: fadeIn 0.4s ease;
+    }
+    #whiteboard-panel.visible { display: block; }
+
+    /* Tray strip along bottom of board */
+    #whiteboard-panel::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 8px;
+      background: #d0cec8;
+      border-radius: 0 0 2px 2px;
+    }
+
+    .board-riddle {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1.05rem;
+      color: #1a1a1a;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    /* Underline-only answer input */
+    #riddle-input {
+      display: block;
+      width: 100%;
+      border: none;
+      border-bottom: 2px solid #333;
+      background: transparent;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1rem;
+      color: #1a1a1a;
+      padding: 6px 0;
+      margin-top: 4px;
+      outline: none;
+    }
+    #riddle-input::placeholder {
+      color: rgba(0,0,0,0.28);
+      font-size: 0.9rem;
+    }
+
+    #board-feedback {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 0.88rem;
+      margin-top: 10px;
+      min-height: 22px;
+    }
+    /* Override shared .error-text / .success-text colors for dark-on-light board */
+    #board-feedback.error-text   { color: #b00020; }
+    #board-feedback.success-text { color: #1B4332; }
+
+    /* ── White flash transition ── */
+    @keyframes flashIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    #flash {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      z-index: 1000;
+    }
+    #flash.active {
+      display: block;
+      animation: flashIn 0.5s ease forwards;
+    }
+
+    /* ── Instruction hint ── */
+    #hint-text {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-style: italic;
+      color: var(--cream);
+      font-size: 0.85rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+    }
+
+    /* ── Floating message ── */
+    .float-msg {
+      position: fixed;
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+      transform: translate(-50%, -100%);
+      transition: opacity 1.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Timer -->
+  <div class="timer" id="timer"></div>
+
+  <!-- Instruction hint -->
+  <p id="hint-text">Grab an expo marker and get to work.</p>
+
+  <!-- Thief's torn note (slides in after 1 s) -->
+  <div id="thief-note">
+    "Last chance. Answer correctly or you'll never find him."
+    <span class="note-sig">&mdash; The Thief</span>
+  </div>
+
+  <!-- Full-screen white flash -->
+  <div id="flash"></div>
+
+  <div class="room-container" style="background-image: url('assets/images/classroom.png');">
+
+    <!-- ── Correct hotspot: left whiteboard ── -->
+    <div
+      id="hotspot-board"
+      class="hotspot hotspot-board"
+      style="left: 35%; top: 18%; width: 220px; height: 140px;"
+      onclick="revealWhiteboard()"
+    ></div>
+
+    <!-- ── Correct hotspot: right whiteboard ── -->
+    <div
+      id="hotspot-board-2"
+      class="hotspot hotspot-board"
+      style="left: 72%; top: 18%; width: 180px; height: 120px;"
+      onclick="revealWhiteboard()"
+    ></div>
+
+    <!-- ── In-place whiteboard panel ── -->
+    <div id="whiteboard-panel">
+      <p class="board-riddle">
+        Roger Babson built this college on one idea. It is the first word of Babson's mission. It is what every student here is training to become. What is it?
+      </p>
+      <input
+        id="riddle-input"
+        type="text"
+        placeholder="write your answer here..."
+        autocomplete="off"
+      />
+      <button class="btn" onclick="checkAnswer()" style="margin-top: 16px;">Submit</button>
+      <div id="board-feedback"></div>
+    </div>
+
+    <!-- ── Decoy: left seating area ── -->
+    <div class="hotspot" style="left: 5%; top: 40%; width: 150px; height: 200px;"
+      onclick="showFloatMsg(event, 'Nothing here.')"></div>
+
+    <!-- ── Decoy: right seating area ── -->
+    <div class="hotspot" style="right: 5%; top: 40%; width: 150px; height: 200px;"
+      onclick="showFloatMsg(event, 'Nothing here.')"></div>
+
+    <!-- ── Decoy: projector on ceiling ── -->
+    <div class="hotspot" style="left: 42%; top: 2%; width: 100px; height: 60px;"
+      onclick="showFloatMsg(event, 'Nothing here.')"></div>
+
+    <!-- ── Decoy: podium/desk at front ── -->
+    <div class="hotspot" style="left: 62%; top: 42%; width: 100px; height: 100px;"
+      onclick="showFloatMsg(event, 'Nothing here.')"></div>
+
+    <!-- ── Decoy: exit sign left ── -->
+    <div class="hotspot" style="left: 20%; top: 15%; width: 60px; height: 40px;"
+      onclick="showFloatMsg(event, 'Nothing here.')"></div>
+
+  </div>
+
+  <script src="js/game.js"></script>
+  <script>
+    checkAccess('room2Complete', 'room2.html');
+    startTimer(10, 'timer');
+
+    // ── Torn note slides in after 1 s ─────────────────────────────────────────
+    setTimeout(() => {
+      document.getElementById('thief-note').classList.add('slide-in');
+    }, 1000);
+
+    // ── Reveal in-place whiteboard ────────────────────────────────────────────
+    function revealWhiteboard() {
+      document.querySelectorAll('.hotspot-board').forEach(h => h.style.display = 'none');
+      document.getElementById('hint-text').style.opacity = '0';
+      document.getElementById('whiteboard-panel').classList.add('visible');
+      setTimeout(() => document.getElementById('riddle-input').focus(), 100);
+    }
+
+    // ── Answer check ──────────────────────────────────────────────────────────
+    const CORRECT = ['entrepreneur', 'entrepreneurship'];
+
+    function checkAnswer() {
+      const input    = document.getElementById('riddle-input');
+      const feedback = document.getElementById('board-feedback');
+      const val      = input.value.trim().toLowerCase();
+
+      if (CORRECT.includes(val)) {
+        showSuccess(feedback, "That's it. The thief's trail ends here.");
+        input.disabled = true;
+        document.querySelector('#whiteboard-panel .btn').disabled = true;
+
+        setTimeout(() => {
+          const flash = document.getElementById('flash');
+          flash.classList.add('active');
+          setTimeout(() => {
+            setProgress('room3Complete', 'true');
+            window.location.href = 'room4.html';
+          }, 500);
+        }, 2000);
+
+      } else {
+        shakeElement(input);
+        showError(feedback, "Not quite. Think about what Babson stands for.");
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    // Enter key submits
+    document.getElementById('riddle-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkAnswer();
+    });
+
+    // ── Floating message helper ───────────────────────────────────────────────
+    function showFloatMsg(e, text) {
+      const msg = document.createElement('div');
+      msg.className = 'float-msg';
+      msg.textContent = text;
+      msg.style.left = e.clientX + 'px';
+      msg.style.top  = e.clientY + 'px';
+      document.body.appendChild(msg);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { msg.style.opacity = '0'; });
+      });
+
+      setTimeout(() => msg.remove(), 1550);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room 1 — The Dorm</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Overlay fix ── */
+    .room-container::after {
+      pointer-events: none;
+    }
+
+    /* ── iPhone Notification ── */
+    @keyframes slideDown {
+      from { transform: translateX(-50%) translateY(-120px); opacity: 0; }
+      to   { transform: translateX(-50%) translateY(0);      opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateX(-50%) translateY(0);      opacity: 1; }
+      to   { transform: translateX(-50%) translateY(-120px); opacity: 0; }
+    }
+
+    #notif-banner {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-120px);
+      width: 340px;
+      background: rgba(245, 245, 247, 0.97);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      z-index: 1000;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+      pointer-events: none;
+      opacity: 0;
+    }
+    #notif-banner.show {
+      animation: slideDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    #notif-banner.hide {
+      animation: slideUp 0.35s ease-in forwards;
+      pointer-events: none;
+      cursor: default;
+    }
+    #notif-banner.gone {
+      display: none;
+    }
+
+    .notif-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #1B4332;
+      color: #ffffff;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .notif-body   { flex: 1; overflow: hidden; }
+    .notif-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .notif-sender {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #1c1c1e;
+    }
+    .notif-time {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.7rem;
+      color: #8e8e93;
+    }
+    .notif-preview {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      color: #3a3a3c;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Hotspots ── */
+    .hotspot {
+      position: absolute;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    /* ── Correct hotspot glow ── */
+    @keyframes flagGlow {
+      0%   { box-shadow: 0 0 4px  rgba(242, 169, 0, 0.08); }
+      50%  { box-shadow: 0 0 8px  rgba(242, 169, 0, 0.15); }
+      100% { box-shadow: 0 0 4px  rgba(242, 169, 0, 0.08); }
+    }
+    #hotspot-flag {
+      animation: flagGlow 3s ease-in-out infinite;
+      border-radius: 4px;
+    }
+
+    /* ── Note panel ── */
+    #note-panel {
+      display: none;
+    }
+    #note-panel.visible {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+
+    /* ── Instruction hint ── */
+    #hint-text {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-style: italic;
+      color: var(--cream);
+      font-size: 0.85rem;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+    }
+
+    /* ── Crime scene photo modal ── */
+    #photo-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #photo-modal.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-inner {
+      position: relative;
+      max-width: 600px;
+      width: 90%;
+    }
+    .modal-close {
+      position: absolute;
+      top: -36px;
+      right: 0;
+      background: none;
+      border: none;
+      color: var(--gold);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+    }
+    .modal-close:hover { color: var(--cream); }
+    .modal-caption {
+      font-style: italic;
+      color: rgba(248, 244, 233, 0.6);
+      font-size: 0.78rem;
+      text-align: right;
+      margin-top: 6px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .modal-inner .text-message img {
+      border-radius: 12px;
+    }
+
+    /* ── Floating decoy label ── */
+    .float-msg {
+      position: fixed;
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+      transform: translate(-50%, -100%);
+      transition: opacity 1.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Crime scene photo modal -->
+  <div id="photo-modal">
+    <div class="modal-inner">
+      <button class="modal-close" onclick="closePhotoModal()" aria-label="Close">&times;</button>
+      <div class="text-message">
+        <div class="sender">Roommate</div>
+        <p style="font-size:0.9rem; line-height:1.6; color:var(--cream); margin-bottom:8px;">
+          bro look at this. they've got the whole plaza taped off. babson police K9 units and everything. this is serious, they are saying the first hint is on the back of a babson poster, hopefully not the new one i just bought
+          
+        </p>
+        <img src="assets/images/policeglobe.png" alt="Crime scene at globe plaza" />
+      </div>
+      <p class="modal-caption">Sent 7:43 AM</p>
+    </div>
+  </div>
+
+  <!-- iPhone notification banner — click to see crime scene photo -->
+  <div id="notif-banner">
+    <div class="notif-icon">B</div>
+    <div class="notif-body">
+      <div class="notif-header">
+        <span class="notif-sender">Roommate</span>
+        <span class="notif-time">now</span>
+      </div>
+      <div class="notif-preview">bro wake UP. someone stole the Roger Babson statue...</div>
+    </div>
+  </div>
+
+  <!-- Timer -->
+  <div class="timer" id="timer"></div>
+
+  <!-- Instruction hint -->
+  <p id="hint-text">Search the room &mdash; click to investigate</p>
+
+  <div class="room-container" style="background-image: url('assets/images/dorm.png');">
+
+    <!-- ── Correct hotspot: pink Babson flag ── -->
+    <div
+      id="hotspot-flag"
+      class="hotspot"
+      style="left: 55%; top: 8%; width: 110px; height: 130px; transform: rotate(-15deg);"
+      onclick="foundNote()"
+    ></div>
+
+    <!-- ── Decoy: coffee cup bottom left ── -->
+    <div class="hotspot" style="left: 16%; top: 74%; width: 70px; height: 70px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: water bottle ── -->
+    <div class="hotspot" style="left: 20%; top: 70%; width: 50px; height: 80px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: left bed pillow ── -->
+    <div class="hotspot" style="left: 5%; top: 48%; width: 120px; height: 80px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: teal lamp ── -->
+    <div class="hotspot" style="left: 8%; top: 60%; width: 60px; height: 90px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: photo wall ── -->
+    <div class="hotspot" style="left: 3%; top: 15%; width: 130px; height: 180px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: whiteboard ── -->
+    <div class="hotspot" style="left: 30%; top: 20%; width: 120px; height: 120px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: right bed ── -->
+    <div class="hotspot" style="left: 48%; top: 45%; width: 140px; height: 120px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: bookshelf ── -->
+    <div class="hotspot" style="left: 80%; top: 35%; width: 100px; height: 160px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: mini fridge ── -->
+    <div class="hotspot" style="left: 88%; top: 72%; width: 80px; height: 100px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: plant on desk ── -->
+    <div class="hotspot" style="left: 84%; top: 52%; width: 60px; height: 70px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: red mug ── -->
+    <div class="hotspot" style="left: 76%; top: 38%; width: 50px; height: 50px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Decoy: shoes on floor ── -->
+    <div class="hotspot" style="left: 70%; top: 78%; width: 80px; height: 60px;"
+      onclick="showDecoyMsg(event)"></div>
+
+    <!-- ── Clue panel (hidden until flag is clicked) ── -->
+    <div class="ui-panel" id="note-panel">
+      <h2>You found a note!</h2>
+      <div class="clue-box">
+        "You'll find your next clue where Babson students fuel up. Look for what doesn't belong on the menu. &mdash; The Thief"
+      </div>
+      <button
+        class="btn"
+        onclick="setProgress('room1Complete', 'true'); window.location.href='room2.html';"
+      >
+        Head to Trim Dining Hall
+      </button>
+    </div>
+
+  </div>
+
+  <script src="js/game.js"></script>
+  <script>
+    startTimer(10, 'timer');
+
+    // ── Notification ──────────────────────────────────────────────────────────
+    const banner = document.getElementById('notif-banner');
+    let autoHideTimer = null;
+
+    function dismissBanner() {
+      clearTimeout(autoHideTimer);
+      banner.classList.remove('show');
+      banner.classList.add('hide');
+      setTimeout(() => banner.classList.add('gone'), 380);
+    }
+
+    function openPhotoModal() {
+      document.getElementById('photo-modal').classList.add('open');
+    }
+
+    function closePhotoModal() {
+      document.getElementById('photo-modal').classList.remove('open');
+    }
+
+    // Close modal on backdrop click (outside .modal-inner)
+    document.getElementById('photo-modal').addEventListener('click', function(e) {
+      if (e.target === this) closePhotoModal();
+    });
+
+    // Clicking the banner dismisses it and opens the photo modal
+    banner.addEventListener('click', () => {
+      dismissBanner();
+      openPhotoModal();
+    });
+
+    // Auto-show after 1 s, auto-dismiss after 4 s if not clicked
+    setTimeout(() => {
+      banner.classList.add('show');
+      autoHideTimer = setTimeout(dismissBanner, 4000);
+    }, 1000);
+
+    // ── Correct hotspot ───────────────────────────────────────────────────────
+    function foundNote() {
+      document.querySelectorAll('.hotspot').forEach(h => h.style.display = 'none');
+      document.getElementById('hint-text').style.opacity = '0';
+      document.getElementById('note-panel').classList.add('visible');
+    }
+
+    // ── Decoy: floating label at click coordinates ────────────────────────────
+    function showDecoyMsg(e) {
+      const msg = document.createElement('div');
+      msg.className = 'float-msg';
+      msg.textContent = 'Nothing there. Keep looking.';
+      msg.style.left = e.clientX + 'px';
+      msg.style.top  = e.clientY + 'px';
+      document.body.appendChild(msg);
+
+      // Trigger fade in next frame so the transition fires
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          msg.style.opacity = '0';
+        });
+      });
+
+      setTimeout(() => msg.remove(), 1550);
+    }
+  </script>
+</body>
+</html>

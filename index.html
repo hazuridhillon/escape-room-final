@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Missing Statue — A Babson Escape Room</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .title-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+      z-index: 10;
+      position: relative;
+      padding: 24px;
+    }
+
+    .title-screen * {
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+    }
+
+    .title-label {
+      color: var(--gold);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .title-screen h1 {
+      font-size: 4rem;
+      color: var(--cream);
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .title-rule {
+      border: none;
+      border-top: 1px solid var(--gold);
+      width: 100%;
+      max-width: 400px;
+      margin: 0;
+    }
+
+    .title-tagline {
+      font-style: italic;
+      color: var(--cream);
+      font-size: 1rem;
+      margin: 0;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="room-container" style="
+    background-image: url('assets/images/snow.png');
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  ">
+
+    <div class="title-screen">
+      <p class="title-label">Babson College &mdash; An Escape Room</p>
+      <h1>The Missing Statue</h1>
+      <hr class="title-rule" />
+      <p class="title-tagline">Someone stole the statue. Follow the trail.</p>
+      <button
+        class="btn"
+        onclick="clearProgress(); window.location.href='room1.html';"
+      >
+        Begin
+      </button>
+    </div>
+
+  </div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
