@@ -1,0 +1,1 @@
+My proposal for this proejct is an interactive babson escape rooom which takes you through diffenrt parts of campus helping to solve a mystery.
